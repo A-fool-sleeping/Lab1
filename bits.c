@@ -2,7 +2,7 @@
  * CS:APP Data Lab 
  * 
  * <Please put your name and userid here>
- * 
+ * 苏战彪 25301030062
  * bits.c - Source file with your solutions to the Lab.
  *          This is the file you will hand in to your instructor.
  *
@@ -34,7 +34,6 @@ INTEGER CODING RULES:
       int var1 = Expr1;
       ...
       int varM = ExprM;
-
       varJ = ExprJ;
       ...
       varN = ExprN;
@@ -104,7 +103,7 @@ You are expressly forbidden to:
   2. Define any additional functions in this file.
   3. Call any functions.
   4. Use any form of casting.
-  5. Use any data type other than int or unsigned.  This means that you
+  5. Use any data type other than int or unsigned.  This means that
      cannot use arrays, structs, or unions.
   6. Use any floating point data types, operations, or constants.
 
@@ -114,15 +113,15 @@ NOTES:
      check the legality of your solutions.
   2. Each function has a maximum number of operations (integer, logical,
      or comparison) that you are allowed to use for your implementation
-     of the function.  The max operator count is checked by dlc.
+     of the function. The max operator count is checked by dlc.
      Note that assignment ('=') is not counted; you may use as many of
      these as you want without penalty.
   3. Use the btest test harness to check your functions for correctness.
   4. Use the BDD checker to formally verify your functions
   5. The maximum number of ops for each function is given in the
-     header comment for each function. If there are any inconsistencies 
-     between the maximum ops in the writeup and in this file, consider
-     this file the authoritative source.
+  header comment for each function. If there are any inconsistencies 
+  between the maximum ops in the writeup and in this file, consider
+  the authoritative source.
 
 /*
  * STEP 2: Modify the following functions according the coding rules.
@@ -146,7 +145,7 @@ NOTES:
  *   Rating: 1
  */
 int signMask(void) {
-  return 1;
+  return 1<<31;
 }
 
 // P2
@@ -158,7 +157,7 @@ int signMask(void) {
  *   Rating: 2
  */
 int bitXor(int x, int y) {
-	return 2;
+	return ~(~x & ~y) & ~(x & y);
 }
 
 // P3
@@ -170,7 +169,8 @@ int bitXor(int x, int y) {
  *   Rating: 3
  */
 int negativePart(int x){
-  return 3;
+  int st=x>>31;
+  return st & (~x+1);
 }
 
 
@@ -185,7 +185,11 @@ int negativePart(int x){
  *   Rating: 4
  */
 int copyByteWithin(int x, int src, int dst) {
-  return 4;
+  int shift_src = src << 3;
+  int shift_dst = dst << 3;
+  int byte = (x >> shift_src) & 0xFF;
+  int clear_mask = ~(0xFF << shift_dst);
+  return (x & clear_mask) | (byte << shift_dst);
 }
 
 // P5
@@ -198,7 +202,9 @@ int copyByteWithin(int x, int src, int dst) {
  *   Rating: 4
  */
 int logicalShift(int x, int n) {
-  return 5;
+  int temp = x>> n;
+  int mask =~((1<<31)>>n<<1);
+  return temp & mask;
 }
 
 // P6
@@ -209,9 +215,15 @@ int logicalShift(int x, int n) {
  *   Max ops: 18
  *   Rating: 4
  */
-int swapNibblePairs(int x) {
-  return 6;
+int swapNibblePairs(int x) { 
+  int low_mask = (0x0F << 24) | (0x0F << 16) | (0x0F << 8) | 0x0F;
+    int high_mask = (0xF0 << 24) | (0xF0 << 16) | (0xF0 << 8) | 0xF0;
+    int low_part = (x & low_mask) << 4;
+    int temp = (x & high_mask) >> 4;
+    int high_part = temp & low_mask;
+    return low_part | high_part;
 }
+   
 
 // P7
 /*
@@ -223,20 +235,27 @@ int swapNibblePairs(int x) {
  *   Rating: 4
  */
 int secondLowestZeroBit(int x) {
-  return 7;
+  int first_zero = ~x & (x + 1);
+  int x2 = x | first_zero;
+  return ~x2 & (x2 + 1);
 }
 
 // P8
 /*
  * oddParity - return the odd parity bit of x, that is,
- *      when the number of 1s in the binary representation of x is even, then the return 1, otherwise return 0.
+ *      when the number of 1s in the binary representation of x is even, then return 1, otherwise return 0.
  *   Examples: oddParity(5) = 1, oddParity(7) = 0
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 56
  *   Rating: 5
  */
 int oddParity(int x) {
-  return 8;
+  x ^= x >> 16;
+  x ^= x >> 8;
+  x ^= x >> 4;
+  x ^= x >> 2;
+  x ^= x >> 1;
+  return !(x & 1);
 }
 
 // P9
@@ -249,7 +268,12 @@ int oddParity(int x) {
  *   Rating: 5
  */
 int rotateRightBits(int x, int n) {
-  return 9;
+    int shift = n & 31;
+    int right = x >> shift;
+    int left = x << (32 + (~shift + 1));
+    int mask = (~0) << (32 + (~shift + 1));
+    right = right & (~mask);
+    return (left & mask) | right;
 }
 
 // P10
@@ -264,9 +288,20 @@ int rotateRightBits(int x, int n) {
  *   Rating: 5
  */
 int roundEvenPow2(int x, int n) {
-  return 10;
-}
+ int pow2 = 1 << n;
+    int mask = pow2 + ~0;
+    int rem = x & mask;
+    int half = pow2 >> 1;
+    int base = x & ~mask;
 
+    int diff = rem + (~half + 1);
+    int greater = !((diff + ~0) >> 31);
+    int isHalf = !(rem ^ half);
+
+    int roundUp = greater | (isHalf & ((base >> n) & 1));
+
+    return base + (roundUp << n);
+}
 // P11
 /* 
  * midpointTowardFirst - return the exact mathematical midpoint (x+y)/2
@@ -280,7 +315,22 @@ int roundEvenPow2(int x, int n) {
  *   Rating: 5
  */
 int midpointTowardFirst(int x, int y) {
-  return 11;
+    
+int xy = x ^ y;
+    int mid = (x & y) + (xy >> 1);
+
+    int sx = x >> 31;
+    int sy = y >> 31;
+    int signDiff = sx ^ sy;
+    int same = ~signDiff;
+
+    int diff = (x & same) + (~y & same) + 1;
+
+    int greater = (((!sx) & signDiff)
+                   | (same & !(diff >> 31) & !!diff));
+
+    return mid + (greater & (xy & 1));
+
 }
 
 
@@ -294,12 +344,31 @@ int midpointTowardFirst(int x, int y) {
  *   Rating: 7
  */
 int isBetweenEitherOrder(int x, int a, int b) {
-  return 12;
+    int a_neg = a >> 31;
+    int b_neg = b >> 31;
+    int diff = a + (~b + 1);
+    int diff_neg = diff >> 31;
+    int same_sign = ~(a_neg ^ b_neg);
+    int a_less_b = (same_sign & diff_neg) | (a_neg & ~b_neg);
+    int lo = (a & a_less_b) | (b & ~a_less_b);
+    int hi = (b & a_less_b) | (a & ~a_less_b);
+    int x_neg = x >> 31;
+    int lo_neg = lo >> 31;
+    int same_lo = ~(x_neg ^ lo_neg);
+    int diff_lo = x + (~lo + 1);
+    int x_less_lo = (same_lo & (diff_lo >> 31)) | (x_neg & ~lo_neg);
+    int ge_lo = ~x_less_lo;
+    int hi_neg = hi >> 31;
+    int same_hi = ~(hi_neg ^ x_neg);
+    int diff_hi = hi + (~x + 1);
+    int hi_less_x = (same_hi & (diff_hi >> 31)) | (hi_neg & ~x_neg);
+    int le_hi = ~hi_less_x;
+    return (ge_lo & le_hi) & 1;
 }
 
 // P13
 /* 
- * mul5Sat - return x*5, and if x*5 overflow, change the result to 
+ * mul5Sat - return x*5, and if x*5 overflows, change the result to 
  * INT_MAX(0x7fffffff) or INT_MIN(0x80000000) correspondingly
  *   Examples: mul5Sat(1) = 0x5, mul5Sat(0x40000000) = 0x7fffffff
  *   Legal ops: ! ~ & ^ | + << >>
@@ -307,7 +376,22 @@ int isBetweenEitherOrder(int x, int a, int b) {
  *   Rating: 7
  */
 int mul5Sat(int x) {
-  return 13;
+    int prod = (x << 2) + x;
+    int x_sign = x >> 31;
+
+    int max5 = (0x19 << 24) | (0x99 << 16)
+             | (0x99 << 8) | 0x99;
+
+    int dpos = x + (~max5 + 1);
+    int pos_ov = (~x_sign) & ~((dpos + ~0) >> 31);
+
+    int ndiff = x + max5;
+    int neg_ov = x_sign & (ndiff >> 31);
+
+    int overflow = pos_ov | neg_ov;
+    int sat = x_sign ^ ~(1 << 31);
+
+    return (overflow & sat) | (~overflow & prod);
 }
 
 // P14
@@ -320,7 +404,18 @@ int mul5Sat(int x) {
  *   Rating: 7
  */
 int classifyAdd3(int x, int y, int z) {
-  return 14;
+    int s1 = x + y;
+    int ov1p = (~(x>>31)) & (~(y>>31)) & (s1>>31);
+    int ov1n = (x>>31) & (y>>31) & (~(s1>>31));
+    int s2 = s1 + z;
+    int ov2p = (~(s1>>31)) & (~(z>>31)) & (s2>>31);
+    int ov2n = (s1>>31) & (z>>31) & (~(s2>>31));
+    int posOv = ov1p | ov2p;
+    int negOv = ov1n | ov2n;
+    int cancel = posOv & negOv;
+    posOv = posOv & ~cancel;
+    negOv = negOv & ~cancel;
+    return (posOv & 1) | (negOv & (~0));
 }
 
 // P15
@@ -332,28 +427,115 @@ int classifyAdd3(int x, int y, int z) {
  *   single-precision floating point values.
  *   Use round-to-nearest-even. Preserve the sign of both +0 and -0.
  *   When argument is NaN, return argument.
- *   Legal ops: Any integer / unsigned operations incl. ||, &&. also if, while
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
  *   Max ops: 60
  *   Rating: 7
  */
 unsigned floatScaleThreeHalves(unsigned uf) {
-  return 15;
+     unsigned sign = uf & 0x80000000u;
+    unsigned exp = (uf >> 23) & 0xffu;
+    unsigned frac = uf & 0x7fffffu;
+    unsigned sig = frac;
+
+    /* NaN 或无穷大 */
+    if (exp == 0xffu)
+        return uf;
+
+    /* 规格化数补上隐藏位 */
+    if (exp != 0u)
+        sig |= 0x800000u;
+
+    /* 将有效数乘以 3 */
+    unsigned prod = sig * 3u;
+
+    /*
+     * shift 为 1 或 2。
+     * 右移后得到待舍入的有效数。
+     */
+    unsigned shift = 1u + (prod >> 25);
+    unsigned q = prod >> shift;
+    unsigned t = shift - 1u;
+
+    /* 最接近偶数舍入 */
+    unsigned guard = (prod >> t) & 1u;
+    unsigned low = (prod & ((1u << t) - 1u)) | (q & 1u);
+    q += guard & low;
+
+    /* 非规格数：结果可直接作为位级表示 */
+    if (exp == 0u)
+        return sign | q;
+
+    /* 调整阶码 */
+    exp += t;
+
+    /* 中间的乘 3 操作溢出 */
+    if (exp >= 255u)
+        return sign | 0x7f800000u;
+
+    return sign | (exp << 23) | (q & 0x7fffffu);
 }
 
 // P16
-/* 
+/* `
  * floatRoundEven - round the floating-point value represented by uf to the
  *   nearest integer, with halfway cases rounded to the even integer. Return
  *   the bit-level representation of that integer as a single-precision float.
- *   If rounding produces zero, preserve the input sign; thus a negative
- *   value that rounds to zero returns -0. When uf is NaN or infinity,
+ *   If rounding produces zero, preserve the input sign; thus a negative value
+ *   that rounds to zero returns -0. When uf is NaN or infinity,
  *   return uf unchanged.
- *   Legal ops: Any integer / unsigned operations incl. ||, &&. also if, while
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
  *   Max ops: 65
  *   Rating: 10
  */
 unsigned floatRoundEven(unsigned uf) {
-  return 16;
+    unsigned sign = uf & 0x80000000u;
+    unsigned exp = (uf >> 23) & 0xffu;
+    unsigned frac = uf & 0x7fffffu;
+
+    /* NaN 和无穷大保持不变 */
+    if (exp == 0xffu)
+        return uf;
+
+    /* 绝对值小于 0.5，舍入为带符号的零 */
+    if (exp < 126u)
+        return sign;
+
+    /* 绝对值位于 [0.5, 1) */
+    if (exp == 126u) {
+        if (frac == 0u)
+            return sign;
+        return sign | 0x3f800000u;
+    }
+
+    /* 绝对值大于等于 2^23，已经是整数 */
+    if (exp >= 150u)
+        return uf;
+
+    /* 恢复隐藏位 */
+    unsigned sig = 0x800000u | frac;
+
+    /* 需要舍去的小数位数 */
+    unsigned shift = 150u - exp;
+    unsigned mask = (1u << shift) - 1u;
+    unsigned lost = sig & mask;
+    unsigned half = 1u << (shift - 1u);
+
+    /* 保留部分 */
+    unsigned rounded = sig & ~mask;
+    unsigned kept = sig >> shift;
+
+    /* 最接近偶数舍入 */
+    if (lost > half || (lost == half && (kept & 1u))) {
+        rounded += 1u << shift;
+    }
+
+    /* 处理有效数进位 */
+    if (rounded == 0x01000000u) {
+        exp++;
+        rounded = 0x00800000u;
+    }
+
+    return sign | (exp << 23) | (rounded & 0x7fffffu);
 }
 
 // P17
@@ -362,15 +544,48 @@ unsigned floatRoundEven(unsigned uf) {
  *   Result is returned as unsigned int, but
  *   it is to be interpreted as the bit-level representation of a
  *   single-precision floating point values.
- *   Legal ops: Any integer / unsigned operations incl. ||, &&. also if, while
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
  *   Max ops: 40
  *   Rating: 10
  */
 unsigned float_i2f(int x) {
-  return 17;
+    unsigned sign = 0u;
+    unsigned ux = x;
+
+    if (x == 0)
+        return 0u;
+
+    if (x < 0) {
+        sign = 0x80000000u;
+        ux = ~ux + 1u;
+    }
+
+    int shift = 0;
+    unsigned tmp = ux;
+
+    while (tmp > 1) {
+        tmp >>= 1;
+        shift++;
+    }
+
+    int exp = shift + 127;
+    ux = ux << (31 - shift);
+
+    unsigned round_bits = ux & 0xffu;
+    ux >>= 8;
+
+    if (round_bits > 0x80u ||
+        (round_bits == 0x80u && (ux & 1u))) {
+        ux += 1u;
+
+        if (ux >> 24) {
+            ux >>= 1;
+            exp += 1;
+        }
+    }
+
+    return sign | (exp << 23) | (ux & 0x7fffffu);
 }
-
-
 
 // P18
 /*
@@ -381,7 +596,22 @@ unsigned float_i2f(int x) {
  *   Rating: 10
  */
 int bitCount(int x) {
-  return 18;
+    int m1 = 0x55 | (0x55 << 8);
+    m1 = m1 | (m1 << 16);
+
+    int m2 = 0x33 | (0x33 << 8);
+    m2 = m2 | (m2 << 16);
+
+    int m4 = 0x0f | (0x0f << 8);
+    m4 = m4 | (m4 << 16);
+
+    x = (x & m1) + ((x >> 1) & m1);
+    x = (x & m2) + ((x >> 2) & m2);
+    x = (x + (x >> 4)) & m4;
+    x = x + (x >> 8);
+    x = x + (x >> 16);
+
+    return x & 0x3f;
 }
 
 // P19
@@ -393,7 +623,21 @@ int bitCount(int x) {
  *   Max ops: 34
  *   Rating: 10
  */
-int bitReverse(int x)
-{
-  return 19;
+int bitReverse(int x){
+int m4 = 0x0f | (0x0f << 8);
+    m4 = m4 | (m4 << 16);
+
+    int m2 = m4 ^ (m4 << 2);
+    int m1 = m2 ^ (m2 << 1);
+    int m8 = 0xff | (0xff << 16);
+
+    x = ((x >> 1) & m1) | ((x & m1) << 1);
+    x = ((x >> 2) & m2) | ((x & m2) << 2);
+    x = ((x >> 4) & m4) | ((x & m4) << 4);
+    x = ((x >> 8) & m8) | ((x & m8) << 8);
+
+    int low16 = 0xff | (0xff << 8);
+    x = ((x >> 16) & low16) | (x << 16);
+
+    return x;·
 }
