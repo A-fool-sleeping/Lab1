@@ -639,5 +639,5 @@ int m4 = 0x0f | (0x0f << 8);
     int low16 = 0xff | (0xff << 8);
     x = ((x >> 16) & low16) | (x << 16);
 
-    return x;·
+    return x;
 }
